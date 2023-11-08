@@ -1,0 +1,2447 @@
+TCP S
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<unistd.h>
+#include<string.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in servaddr,cliaddr;
+        sockdesc=socket(AF_INET,SOCK_STREAM,0);
+        if(sockdesc==-1){
+                printf("Socket failed\n");
+                return -1;
+        }
+        servaddr.sin_family=AF_INET;
+        servaddr.sin_port=htons(4000);
+        servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        if(bind(sockdesc,(struct sockaddr *)&servaddr,sizeof(servaddr))<0)
+        {
+                printf("Bind failed\n");
+                return -1;
+        }
+        if(listen(sockdesc,5)<0){
+                printf("Listen failed\n");
+                return -1;
+        }
+        while(1){
+                int len=sizeof(cliaddr);
+                int connfd=accept(sockdesc,(struct sockaddr *)&cliaddr,&len);
+                if(connect < 0){
+                        printf("Connect failed\n");
+                        return -1;}
+                char buffer[10];
+                strcpy(buffer," ");
+                read(connfd,buffer,10);
+                printf("Message from client:%s",buffer);
+                strcpy(buffer," ");
+                printf("Enter reply:");
+                fgets(buffer,sizeof(buffer),stdin);
+                write(connfd,buffer,sizeof(buffer));
+        }
+        close(sockdesc);
+        return 0;
+}
+
+
+
+
+TCP C
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<unistd.h>
+#include<string.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in servaddr;
+        sockdesc=socket(AF_INET,SOCK_STREAM,0);
+        if(sockdesc==-1){
+                printf("Socket failed\n");
+                return -1;
+        }
+        servaddr.sin_family=AF_INET;
+        servaddr.sin_port=htons(4000);
+        servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        if(connect(sockdesc,(struct sockaddr *)&servaddr,sizeof(servaddr))<0){
+                printf("Connect failed\n");
+                return -1;
+        }
+        char buffer[10];
+        strcpy(buffer," ");
+        printf("Enter the string:");
+        fgets(buffer,sizeof(buffer),stdin);
+        write(sockdesc,buffer,sizeof(buffer));
+        strcpy(buffer," ");
+        read(sockdesc,buffer,10);
+        printf("Message from server:%s",buffer);
+        close(sockdesc);
+        return 0;
+}
+
+
+
+UDP S
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<unistd.h>
+#include<string.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in servaddr,cliaddr;
+        sockdesc=socket(AF_INET,SOCK_DGRAM,0);
+        if(sockdesc == -1){
+                printf("Socket failed\n");
+                return -1;
+        }
+        servaddr.sin_family=AF_INET;
+        servaddr.sin_port=htons(5000);
+        servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        if(bind(sockdesc,(struct sockaddr *)&servaddr,sizeof(servaddr)) < 0)
+        {
+                printf("Bind failed\n");
+                return -1;
+        }
+        while(1){
+                char buffer[10];
+                strcpy(buffer," ");
+                int len=sizeof(cliaddr);
+                recvfrom(sockdesc,buffer,sizeof(buffer),0,(struct sockaddr *)&cliaddr,&len);
+                printf("Message from client:%s\n",buffer);
+                strcpy(buffer," ");
+                printf("Enter the string:");
+                fgets(buffer,sizeof(buffer),stdin);
+                sendto(sockdesc,buffer,sizeof(buffer),0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
+        }
+        close(sockdesc);
+        return 0;
+}
+
+
+UDP C
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<unistd.h>
+#include<string.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in servaddr;
+        sockdesc=socket(AF_INET,SOCK_DGRAM,0);
+        if(sockdesc == -1){
+                printf("Socket failed\n");
+                return -1;
+        }
+        servaddr.sin_family=AF_INET;
+        servaddr.sin_port=htons(5000);
+        servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        char buffer[10];
+        strcpy(buffer," ");
+        printf("Enter the string:");
+        fgets(buffer,sizeof(buffer),stdin);
+        sendto(sockdesc,buffer,sizeof(buffer),0,(struct sockaddr *)&servaddr,sizeof(servaddr));
+        strcpy(buffer," ");
+        int len=sizeof(servaddr);
+        recvfrom(sockdesc,buffer,sizeof(buffer),0,(struct sockaddr *)&servaddr,&len);
+        printf("Message from server:%s\n",buffer);
+        close(sockdesc);
+        return 0;
+}
+
+
+FTP S
+
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<arpa/inet.h>
+#include<unistd.h>
+#include<string.h>
+#define SIZE 1024
+void  write_file(int sockfd){
+        FILE *fp;
+        int n;
+        char buffer[SIZE];
+        fp=fopen("output.txt","w");
+        while(1){
+                n=recv(sockfd,buffer,SIZE,0);
+                if(n<=0){
+                break;
+                }
+                fprintf(fp,"%s",buffer);
+                bzero(buffer,SIZE);
+        }
+}
+int main(){
+        char *ip ="127.0.0.1";
+        int port=8080;
+        int sockfd,new_sock;
+        int e;
+
+        struct sockaddr_in server_addr,new_addr;
+        socklen_t addr_size;
+        sockfd=socket(AF_INET,SOCK_STREAM,0);
+        if(sockfd<0){
+                printf("ERROR IN SOCKET CREATION\n");
+                exit(1);
+        }
+        printf("SOCKET CREATION SUCCESSFULL....\n");
+
+        server_addr.sin_family=AF_INET;
+        server_addr.sin_port=port;
+        server_addr.sin_addr.s_addr=inet_addr(ip);
+
+        e=bind(sockfd,(struct sockaddr*)&server_addr,sizeof(server_addr));
+        if(e<0)
+        {
+                printf("ERROR IN BINDING\n");
+                exit(1);
+        }
+        printf("BINDING SUCCESSFULL....\n");
+
+        e=listen(sockfd,10);
+        if(e==0) printf("LISTENING....\n");
+        else     printf("ERROR IN LISTENING\n");
+
+        addr_size=sizeof(new_addr);
+        new_sock=accept(sockfd,(struct sockaddr*)&new_addr,&addr_size);
+
+        write_file(new_sock);
+        printf("DATA WRITTEN SUCCESFULLY....\n");
+
+}
+
+
+FTP C
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<arpa/inet.h>
+#include<unistd.h>
+#include<string.h>
+#define SIZE 1024
+void send_file(FILE *fp,int sockfd)
+{
+        char data[SIZE]={0};
+        while(fgets(data,SIZE,fp)!=NULL)
+        {
+                send(sockfd,data,sizeof(data),0);
+                bzero(data,SIZE);
+        }
+}
+int main(){
+        char *ip="127.0.0.1";
+        int port=8080;
+        int sockfd;
+        int e;
+        FILE *fp;
+        struct sockaddr_in server_addr;
+
+        sockfd=socket(AF_INET,SOCK_STREAM,0);
+        if(sockfd<0){
+                printf("ERROR IN SOCKET CREATION\n");
+                exit(1);
+        }
+        printf("SOCKET CREATION SUCCESSFULL....\n");
+
+        server_addr.sin_family=AF_INET;
+        server_addr.sin_port=port;
+        server_addr.sin_addr.s_addr=inet_addr(ip);
+
+        e=connect(sockfd,(struct sockaddr*)&server_addr,sizeof(server_addr));
+        if(e==-1){
+                printf("ERROR IN CONNECTION....\n");
+                exit(1);
+        }
+        else printf("CONNECTION SUCCESSFULL....\n");
+
+        fp=fopen("input.txt","r");
+
+        send_file(fp,sockfd);
+        printf("DATA SENT SUCCESSFULLY....\n");
+        close(sockfd);
+        printf("CONNECTION CLOSED....\n");
+
+
+
+}
+
+
+Inp.c
+
+#include<stdio.h>
+#define SIZE 300
+#define SEM 3
+#define N 2
+
+typedef struct{
+        int regno;
+        int age;
+        int sem;
+        int marks[5];
+        char name[SIZE];
+        char gender;
+}student;
+
+int main(){
+        student s[N];
+        FILE *of;
+        of = fopen("stud.bin", "wb");
+        for (int i = 0; i < N; i++){
+                printf("Enter Regno, Name, Age, Gender\n");
+                scanf("%d", &s[i].regno);
+                getchar();
+                scanf("%[^\n]%*c", s[i].name);
+                scanf("%d", &s[i].age);
+                getchar();
+                scanf("%c", &s[i].gender);
+                for (int k = 0; k < SEM; k++){
+                        s[i].sem = k + 1;
+                        printf("Enter marks for sem %d, 5 subjects: ", k +1);
+                        for (int j = 0; j < 5; j++)
+                                scanf("%d", &s[i].marks[j]);
+                        fwrite (&s[i], sizeof(student), 1, of);
+                }
+        }
+        fclose(of);
+        return 0;
+}
+
+FTP py S
+
+import socket
+host = '127.0.0.1'
+port = 7080
+sockfd = socket.socket()
+sockfd.bind((host,port))
+sockfd.listen(3)
+print("server listening....\n")
+conn,_ = sockfd.accept()
+data=conn.recv(1024).decode()
+fp=open("output.txt","w")
+fp.write(data)
+print("file written")
+fp.close()
+
+FTP py C
+
+import socket
+host = '127.0.0.1'
+port = 7080
+sockfd=socket.socket()
+sockfd.connect((host,port))
+filename=input("enter fn:")
+fp=open(filename,"r")
+data=fp.read()
+sockfd.send(data.encode())
+print("file sent")
+fp.close()
+sockfd.close()
+
+
+
+[s2021103585@centos8-linux Wed Nov 08 06:34 AM practise]$ cat perserver.py
+import http.server
+
+class PersistentRequestHandler(http.server.SimpleHTTPRequestHandler):
+        def handle_one_req(self):
+                super().handle_one_req()
+                self.close_connection = False
+
+serv_addr=("0.0.0.0",6080)
+handler = PersistentRequestHandler
+httpd = http.server.HTTPServer(serv_addr,handler)
+print("HTTP SERVER RUNNING\n")
+httpd.serve_forever()
+[s2021103585@centos8-linux Wed Nov 08 06:34 AM practise]$ cat perclient.py
+import http.client
+
+conn = http.client.HTTPConnection("localhost",6080)
+
+for _ in range(3):
+    conn.request("GET","/input.txt")
+    response=conn.getresponse()
+    data=response.read()
+    print(data.decode("utf-8"))
+conn.close()
+
+
+
+
+[s2021103585@centos8-linux Wed Nov 08 06:34 AM practise]$ cat nonserver.py
+import http.server
+
+handler = http.server.SimpleHTTPRequestHandler
+
+server_address = ("0.0.0.0", 7000)
+
+httpd = http.server.HTTPServer(server_address, handler)
+
+print("HTTP server serving at port 8000")
+httpd.serve_forever()
+[s2021103585@centos8-linux Wed Nov 08 06:34 AM practise]$ cat nonclient.py
+import http.client
+
+conn = http.client.HTTPConnection("localhost", 7000)
+
+conn.request("GET", "/input.txt")
+
+response = conn.getresponse()
+
+data = response.read()
+print(data.decode("utf-8"))
+
+conn.close()
+
+
+
+UDP S
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<string.h>
+#include<unistd.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in servaddr,cliaddr;
+        sockdesc=socket(AF_INET,SOCK_DGRAM,0);
+        if(sockdesc==-1)
+        {
+                printf("Socket not created");
+                return -1;
+        }
+        servaddr.sin_family=AF_INET;
+        servaddr.sin_port=htons(3333);                 // PORT number ranges from 1024 to 49151
+        servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        if(bind(sockdesc,(struct sockaddr *)&servaddr,sizeof(servaddr)) < 0)
+        {
+                printf("Bind Failed");
+                return -1;
+        }
+        while(1)
+        {
+                int len=sizeof(cliaddr);
+                printf("Waiting for a request...\n");
+                char buffer[20]="";
+                char buf[20]="";
+                char ans[20]="";
+                /*      strcpy(buffer," ");*/
+                /*      strcpy(ans," ");*/
+                recvfrom(sockdesc,buffer,sizeof(buffer),0,(struct sockaddr *)&cliaddr,&len);
+                recvfrom(sockdesc,buf,sizeof(buf),0,(struct sockaddr *)&cliaddr,&len);
+                printf("Message received from client:\nCommand:%s\nInput:%s\n", buffer, buf);
+                if(strcmp(buffer,"EVENODD")==0)
+                {
+                        int flag=1;
+                        for(int i=0; i<strlen(buf); i++)
+                        {
+                                if(buf[i]<'0' || buf[i]>'9')
+                                {
+                                        flag=-1;
+                                        break;
+                                }
+                        }
+                        if(flag!=-1)
+                        {
+                                int eo= atoi(buf);
+                                if(eo%2==0)
+                                        strcpy(ans,"Even");
+                                else if(eo%2!=0)
+                                        strcpy(ans,"Odd");
+                        }
+                        else if(flag==-1)
+                                strcpy(ans,"Invalid input");
+                        /*             printf("\n%c\n",ans[0]);*/
+                }
+                else if(strcmp(buffer,"PALINDROME")==0)
+                {
+                        int flag=1;
+                        int leng=strlen(buf);
+                        int j=leng-1;
+                        for(int i=0; i<leng/2; i++,j--)
+                        {
+                                if(buf[i]!=buf[j])
+                                {
+                                        flag=-1;
+                                        break;
+                                }
+                        }
+                        if(flag==-1)
+                                strcpy(ans,"Not Palindrome");
+                        else
+                                strcpy(ans,"Palindrome");
+                }
+                else if(strcmp(buffer,"NUM01")==0)
+                {
+                        int flag=1,ct1=0,ct0=0;
+                        for(int i=0; i<strlen(buf); i++)
+                        {
+                                if(buf[i]=='1')
+                                        ct1++;
+                                else if(buf[i]=='0')
+                                        ct0++;
+                                else
+                                {
+                                        flag=-1;
+                                        break;
+                                }
+                        }
+                        if(flag==-1)
+                                strcpy(ans,"Invalid input");
+                        else
+                        {
+                                ans[0]=ct1+48;
+                                ans[1]=' ';
+                                ans[2]=ct0+48;
+                        }
+                }
+                else
+                {
+                        strcpy(ans,"Invalid command");
+                }
+                sendto(sockdesc,ans,strlen(ans),0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
+        }
+        close(sockdesc);
+        return 0;
+}
+
+
+UDP C
+
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<string.h>
+#include<unistd.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in servaddr;
+        sockdesc=socket(AF_INET,SOCK_DGRAM,0);
+        if(sockdesc==-1)
+        {
+                printf("Socket not created");
+                return -1;
+        }
+        servaddr.sin_family=AF_INET;
+        servaddr.sin_port=htons(3333);
+        servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        int n;
+        char temp;
+        printf("Enter the number of commands:\n");
+        scanf("%d",&n);
+        scanf("%c",&temp);
+        for(int i=0;i<n;i++)
+        {
+                char buffer[20]="";
+                char buf[20]="";
+                char ans[20]="";
+                printf("Enter the command: ");
+                /*fgets(buffer,sizeof(buffer),stdin); */
+                scanf("%s",buffer);
+                printf("Enter the input: ");
+                /*fgets(buf,sizeof(buf),stdin); */
+                scanf("%s",buf);
+                sendto(sockdesc,buffer,strlen(buffer),0,(struct sockaddr *)&servaddr,sizeof(servaddr));
+                sendto(sockdesc,buf,strlen(buf),0,(struct sockaddr *)&servaddr,sizeof(servaddr));
+                int len=sizeof(servaddr);
+                recvfrom(sockdesc,ans,sizeof(ans),0,(struct sockaddr *)&servaddr,&len);
+                printf("Message from server: %s\n", ans);
+        }
+        close(sockdesc);
+        return 0;
+}
+
+
+ADDSER 
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<string.h>
+#include<stdlib.h>
+#include<unistd.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in serv1addr,medaddr;
+
+        sockdesc=socket(AF_INET,SOCK_DGRAM,0);
+        if(sockdesc==-1)
+        {
+                printf("Socket not created");
+                return -1;
+        }
+
+        serv1addr.sin_family=AF_INET;
+        serv1addr.sin_port=htons(40002);                        // PORT number ranges from 1024 to 49151
+        serv1addr.sin_addr.s_addr=htonl(INADDR_ANY);
+        if(bind(sockdesc,(struct sockaddr *)&serv1addr,sizeof(serv1addr)) < 0)
+        {
+                printf("Bind Failed");
+                return -1;
+        }
+        int len=sizeof(medaddr);
+        printf("Waiting for a request...\n");
+        char input[30];
+        int output=0;
+        strcpy(input," ");
+        recvfrom(sockdesc,input,sizeof(input),0,(struct sockaddr *)&medaddr,&len);
+        int n=atoi(input);
+        int temp;
+        printf("Enter the numbers- ");
+        while(n>0)
+        {
+                scanf("%d",&temp);
+                output+=temp;
+                n--;
+        }
+        printf("The sum is %d",output);
+        sendto(sockdesc,&output,sizeof(output),0,(struct sockaddr *)&medaddr,sizeof(medaddr));
+        close(sockdesc);
+
+
+
+        return 0;
+}
+
+
+SUBSER
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<string.h>
+#include<unistd.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in serv2addr,medaddr;
+
+        sockdesc=socket(AF_INET,SOCK_DGRAM,0);
+        if(sockdesc==-1)
+        {
+                printf("Socket not created");
+                return -1;
+        }
+
+        serv2addr.sin_family=AF_INET;
+        serv2addr.sin_port=htons(40003);                        // PORT number ranges from 1024 to 49151
+        serv2addr.sin_addr.s_addr=htonl(INADDR_ANY);
+        if(bind(sockdesc,(struct sockaddr *)&serv2addr,sizeof(serv2addr)) < 0)
+        {
+                printf("Bind Failed");
+                return -1;
+        }
+        int len=sizeof(medaddr);
+        printf("Waiting for a request...\n");
+        char input[30];
+        int num1;
+        int num2;
+        int output=0;
+        strcpy(input," ");
+        printf("Enter 1st number- ");
+        scanf("%d",&num1);
+        printf("Enter 2nd number- ");
+        scanf("%d",&num2);
+        recvfrom(sockdesc,input,sizeof(input),0,(struct sockaddr *)&medaddr,&len);
+        output=num2-num1;
+        printf("Th difference is %d",output);
+        sendto(sockdesc,&output,sizeof(output),0,(struct sockaddr *)&medaddr,sizeof(medaddr));
+        close(sockdesc);
+
+
+
+        return 0;
+}
+
+
+MEDIATOR 
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<string.h>
+#include<unistd.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in medaddr,cliaddr,serv1addr,serv2addr;
+
+        sockdesc=socket(AF_INET,SOCK_DGRAM,0);
+        if(sockdesc==-1)
+        {
+                printf("Socket not created");
+                return -1;
+        }
+
+        medaddr.sin_family=AF_INET;
+        medaddr.sin_port=htons(40011);                  // PORT number ranges from 1024 to 49151
+        medaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+
+        serv1addr.sin_family=AF_INET;
+        serv1addr.sin_port=htons(40002);                  // PORT number ranges from 1024 to 49151
+        serv1addr.sin_addr.s_addr=htonl(INADDR_ANY);
+
+        serv2addr.sin_family=AF_INET;
+        serv2addr.sin_port=htons(40003);                  // PORT number ranges from 1024 to 49151
+        serv2addr.sin_addr.s_addr=htonl(INADDR_ANY);
+
+        if(bind(sockdesc,(struct sockaddr *)&medaddr,sizeof(medaddr)) < 0)
+        {
+                printf("Bind Failed");
+                return -1;
+        }
+
+        int len=sizeof(cliaddr);
+        printf("Waiting for a request...\n");
+        char input[30]="";
+        strcpy(input," ");
+        char n[10];
+        int output=0;
+        char space=' ';
+        recvfrom(sockdesc,input,sizeof(input),0,(struct sockaddr *)&cliaddr,&len);
+        if (strcmp(input,"ADD")==0)
+        {
+                printf("Enter the no.of inputs-");
+                scanf("%s",&n);
+                scanf("%c",&space);
+                sendto(sockdesc,n,strlen(n),0,(struct sockaddr *)&serv1addr,sizeof(serv1addr));
+                int ls1=sizeof(serv1addr);
+                recvfrom(sockdesc,&output,sizeof(output),0,(struct sockaddr *)&serv1addr,&ls1);
+                printf("%d-ADD OUTPUT",output);
+        }
+
+        if (strcmp(input,"SUB")==0)
+        {
+                sendto(sockdesc,input,strlen(input),0,(struct sockaddr *)&serv2addr,sizeof(serv2addr));
+                int ls2=sizeof(serv2addr);
+                recvfrom(sockdesc,&output,sizeof(output),0,(struct sockaddr *)&serv2addr,&ls2);
+                printf("%d-the output is",output);
+        }
+
+
+        sendto(sockdesc,&output,sizeof(output),0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
+
+        close(sockdesc);
+
+
+
+        return 0;
+}
+
+
+CLIENT
+
+#include<stdio.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<string.h>
+#include<unistd.h>
+int main()
+{
+        int sockdesc;
+        struct sockaddr_in medaddr;
+        sockdesc=socket(AF_INET,SOCK_DGRAM,0);
+        if(sockdesc==-1)
+        {
+                printf("Socket not created");
+                return -1;
+        }
+
+        medaddr.sin_family=AF_INET;
+        medaddr.sin_port=htons(40011);
+        medaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+        char input[30]="";
+        char space=' ';
+        printf("Enter the command-");
+        scanf("%s",&input);
+        scanf("%c",&space);
+        int output=0;
+        sendto(sockdesc,input,strlen(input),0,(struct sockaddr *)&medaddr,sizeof(medaddr));
+        int len=sizeof(medaddr);
+        recvfrom(sockdesc,&output,sizeof(output),0,(struct sockaddr *)&medaddr,&len);
+        printf("Message from server: %d", output);
+        close(sockdesc);
+        return 0;
+
+}
+
+
+NP SERVER
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 8081
+#define BUFFER_SIZE 1024
+#define N 100
+
+
+struct student{
+    int regno;
+    int ncourses;
+    char courses[20][20];
+    int marks[20];
+};
+typedef struct{
+ char method[N];
+ char path[N];
+ char version[N];
+ char accept[N];
+ char connection[N];
+ char useragent[N];
+}request;
+
+
+typedef struct{
+ int status;
+ char statmsg[N];
+ char version[N];
+ char connection[N];
+ char contype[N];
+}response;
+void read_objects_from_file(const char* filename, struct student people[], int count) {
+    FILE* file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("Unable to open file for reading");
+        return;
+    }
+
+    fread(people, sizeof(struct student), count, file);
+
+    fclose(file);
+}
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    response sr;
+    strcpy(sr.version, "http/1.1");
+    strcpy(sr.connection, "keep-alive");
+    strcpy(sr.contype, "text");
+    char courses[20][20];
+    int marks[20];
+	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attach socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    // Bind the socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+
+        // Accept a new connection
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+
+        request req;
+        // Read data from the client
+        int regno;
+        read(new_socket, &regno,sizeof(regno));
+        printf("Register number received from client : %d \n",regno);
+        read(new_socket, &req, sizeof(request));
+
+        printf("%s \n%s \n%s \n",req.connection,req.version,req.method);
+        struct student students[3];
+        const char* filename = "students.bin";
+        read_objects_from_file(filename, students, 3);
+        int flag = 0;
+        int ncourses = 0;
+        for(int i=0;i<3;i++){
+                if(regno == students[i].regno){
+                        flag = 1;
+                        for(int j=0;j<students[i].ncourses;j++){
+                                strcpy(courses[j],students[i].courses[j]);
+                                marks[j] = students[i].marks[j];
+                                ncourses = students[i].ncourses;
+                        }
+                        strcpy(sr.statmsg,"Found");
+						sr.status = 200;
+                }
+        }
+        if(!flag){
+                strcpy(sr.statmsg, "Not found");
+                sr.status = 404;
+        }
+        send(new_socket, &ncourses, sizeof(ncourses),0);
+        send(new_socket, courses, sizeof(courses), 0);
+        send(new_socket, &sr, sizeof(sr), 0);
+        printf(" data sent back to client\n");
+        close(new_socket);
+
+for(int i=0;i<ncourses;i++){
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attach socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+    int port = 8082 + i;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
+
+    // Bind the socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+        // Accept a new connection
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+        request req1;
+        response sr1;
+        strcpy(sr1.version, "http/1.1");
+        strcpy(sr1.connection, "keep-alive");
+        strcpy(sr1.contype, "text");
+        int index = 0;
+        read(new_socket,&index,sizeof(index));
+        printf("Course received from client : %s \n",courses[index]);
+        read(new_socket,&req1,sizeof(request));
+		printf("%s \n%s \n%s \n",req1.connection,req1.version,req1.method);
+        strcpy(sr1.statmsg,"Found");
+        sr1.status = 200;
+        send(new_socket, &marks[index],sizeof(marks[index]),0);
+        send(new_socket,&sr1,sizeof(sr1),0);
+        close(new_socket);
+}
+    return 0;
+}
+
+
+
+NP CLIENT
+
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include<time.h>
+#define PORT 8081
+#define SERVER_IP "127.0.0.1"
+#define BUFFER_SIZE 1024
+#define N 100
+struct student{
+    int regno;
+    int ncourses;
+    char courses[20][20];
+    int marks[20];
+};
+
+typedef struct{
+ char method[N];
+ char path[N];
+ char version[N];
+ char accept[N];
+ char connection[N];
+ char useragent[N];
+}request;
+
+typedef struct{
+ int status;
+ char statmsg[N];
+ char version[N];
+ char connection[N];
+ char contype[N];
+}response;
+
+int main() {
+    clock_t tStart = clock();
+    int client_fd;
+    struct sockaddr_in server_address;
+    char input[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
+    request cr;
+    strcpy(cr.method, "GET /marks/index.html");
+    strcpy(cr.path, "www.students.com");
+    strcpy(cr.version, "http/1.1");
+    strcpy(cr.connection, "keep-alive");
+    strcpy(cr.accept, "text");
+    strcpy(cr.useragent,"Mozilla/5.0");
+    // Create socket
+    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket creation error");
+        return -1;
+    }
+
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(PORT);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+		perror("address conversion error");
+        return -1;
+    }
+
+    // Connect to the server
+    if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+        perror("connection failed");
+        return -1;
+    }
+
+    printf("Enter Register number to send to the server: ");
+    int regno;
+    scanf("%d", &regno);
+    send(client_fd, &regno,sizeof(regno),0);
+    send(client_fd, &cr, sizeof(cr), 0);
+    response res;
+    char courses[20][20];
+    int ncourses;
+    read(client_fd, &ncourses, sizeof(ncourses));
+    read(client_fd, &courses, sizeof(courses));
+    read(client_fd, &res, sizeof(response));
+    printf("Courses received from server: \n");
+    for(int i=0;i<ncourses;i++){
+        printf("%s\n",courses[i]);
+    }
+    printf("%s\n %d\n",res.statmsg,res.status);
+    close(client_fd);
+for(int i=0;i<ncourses;i++){
+    printf("Opening connection again \n");
+    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket creation error");
+        return -1;
+    }
+    int port = 8082+i;
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(port);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+        perror("address conversion error");
+        return -1;
+    }
+
+    // Connect to the server
+    if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+        perror("connection failed");
+        return -1;
+    }
+
+    int cno = i;
+    request cr1;
+    response res1;
+    strcpy(cr1.method, "GET /marks/");
+    strcat(cr1.method,courses[cno]);
+    cr1.method[strlen(cr1.method)] = '\0';
+    strcpy(cr1.path, "www.students.com");
+    strcpy(cr1.version, "http/1.1");
+	strcpy(cr1.connection, "keep-alive");
+    strcpy(cr1.accept, "text");
+    strcpy(cr1.useragent,"Mozilla/5.0");
+    send(client_fd,&cno,sizeof(cno),0);
+    send(client_fd,&cr1,sizeof(cr1),0);
+    int marks;
+    read(client_fd,&marks,sizeof(marks));
+    read(client_fd,&res1,sizeof(res1));
+    printf("Marks received from server : %d \n",marks);
+    printf("%s\n %d\n",res1.statmsg,res1.status);
+    close(client_fd);
+}
+    double t=(double)(clock() - tStart) / CLOCKS_PER_SEC;
+    printf("Time taken (in seconds) : %f", t);
+    return 0;
+}
+
+
+P SERVER
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 8081
+#define BUFFER_SIZE 1024
+#define N 100
+
+
+struct student{
+    int regno;
+    int ncourses;
+    char courses[20][20];
+    int marks[20];
+};
+typedef struct{
+ char method[N];
+ char path[N];
+ char version[N];
+ char accept[N];
+ char connection[N];
+ char useragent[N];
+}request;
+
+
+typedef struct{
+ int status;
+ char statmsg[N];
+ char version[N];
+ char connection[N];
+ char contype[N];
+}response;
+void read_objects_from_file(const char* filename, struct student people[], int count) {
+    FILE* file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("Unable to open file for reading");
+        return;
+    }
+
+    fread(people, sizeof(struct student), count, file);
+
+    fclose(file);
+}
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    response sr;
+    strcpy(sr.version, "http/1.1");
+    strcpy(sr.connection, "keep-alive");
+    strcpy(sr.contype, "text");
+    // Create socket
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+		perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attach socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    // Bind the socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+        // Accept a new connection
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+
+        request req;
+        // Read data from the client
+        int regno;
+        read(new_socket, &regno,sizeof(regno));
+        printf("Register number received from client : %d",regno);
+        read(new_socket, &req, sizeof(request));
+
+        printf("%s \n%s \n%s \n %s\n %s\n %s \n",req.connection,req.version,req.method,req.path,req.accept,req.useragent);
+        struct student students[3];
+        const char* filename = "students.bin";
+        read_objects_from_file(filename, students, 3);
+        int flag = 0;
+        char courses[20][20];
+        int marks[20];
+        int ncourses = 0;
+        for(int i=0;i<3;i++){
+                if(regno == students[i].regno){
+                        flag = 1;
+                        for(int j=0;j<students[i].ncourses;j++){
+                                strcpy(courses[j],students[i].courses[j]);
+                                marks[j] = students[i].marks[j];
+                                ncourses = students[i].ncourses;
+						}
+                        strcpy(sr.statmsg,"Found");
+                        sr.status = 200;
+                }
+        }
+        if(!flag){
+                strcpy(sr.statmsg, "Not found");
+                sr.status = 404;
+        }
+        send(new_socket,&ncourses,sizeof(ncourses),0);
+        send(new_socket, courses, sizeof(courses), 0);
+        send(new_socket, &sr, sizeof(sr), 0);
+        printf(" data sent back to client\n");
+        request req1;
+        response sr1;
+        strcpy(sr1.version, "http/1.1");
+        strcpy(sr1.connection, "keep-alive");
+        strcpy(sr1.contype, "text");
+        int index = 0;
+        for(int i=0;i<ncourses;i++){
+        read(new_socket,&index,sizeof(index));
+        printf("Course received from client : %s \n",courses[index]);
+        read(new_socket,&req1,sizeof(request));
+        printf("%s \n%s \n%s \n",req1.connection,req1.version,req1.method);
+        strcpy(sr1.statmsg,"Found");
+        sr1.status = 200;
+        send(new_socket, &marks[index],sizeof(marks[index]),0);
+        send(new_socket,&sr1,sizeof(sr1),0);
+        }
+        close(new_socket);
+    }
+
+    return 0;
+}
+
+
+
+P CLIENT
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include<time.h>
+#define PORT 8081
+#define SERVER_IP "127.0.0.1"
+#define BUFFER_SIZE 1024
+#define N 100
+struct student{
+    int regno;
+    int ncourses;
+    char courses[20][20];
+    int marks[20];
+};
+
+typedef struct{
+ char method[N];
+ char path[N];
+ char version[N];
+ char accept[N];
+ char connection[N];
+ char useragent[N];
+}request;
+
+typedef struct{
+ int status;
+ char statmsg[N];
+ char version[N];
+ char connection[N];
+ char contype[N];
+}response;
+
+int main() {
+    clock_t tStart = clock();
+    int client_fd;
+    struct sockaddr_in server_address;
+    char input[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
+    request cr;
+    strcpy(cr.method, "GET /marks/index.html");
+    strcpy(cr.path, "www.students.com");
+    strcpy(cr.version, "http/1.1");
+    strcpy(cr.connection, "keep-alive");
+    strcpy(cr.accept, "text");
+    strcpy(cr.useragent,"Mozilla/5.0");
+    // Create socket
+    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket creation error");
+        return -1;
+    }
+
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(PORT);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+		perror("address conversion error");
+        return -1;
+    }
+
+    // Connect to the server
+    if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+        perror("connection failed");
+        return -1;
+    }
+
+    printf("Enter Register number to send to the server: ");
+    int regno;
+    scanf("%d", &regno);
+    send(client_fd, &regno,sizeof(regno),0);
+    send(client_fd, &cr, sizeof(cr), 0);
+    response res;
+    char courses[20][20];
+    int ncourses;
+    read(client_fd,&ncourses,sizeof(ncourses));
+    read(client_fd, &courses, sizeof(courses));
+    read(client_fd, &res, sizeof(response));
+    printf("Courses received from server: \n");
+    for(int i=0;i<ncourses;i++){
+        printf("%s\n",courses[i]);
+    }
+    printf("%s\n %d\n",res.statmsg,res.status);
+    for(int i=0;i<ncourses;i++){
+    int cno = i;
+    request cr1;
+    response res1;
+    strcpy(cr1.method, "GET /marks/");
+    strcat(cr1.method,courses[cno]);
+    cr1.method[strlen(cr1.method)] = '\0';
+    strcpy(cr1.path, "www.students.com");
+    strcpy(cr1.version, "http/1.1");
+    strcpy(cr1.connection, "keep-alive");
+    strcpy(cr1.accept, "text");
+    strcpy(cr1.useragent,"Mozilla/5.0");
+    send(client_fd,&cno,sizeof(cno),0);
+    send(client_fd,&cr1,sizeof(cr1),0);
+    int marks;
+    read(client_fd,&marks,sizeof(marks));
+    read(client_fd,&res1,sizeof(res1));
+    printf("Marks received from server : %d \n",marks);
+    printf("%s\n %d\n",res1.statmsg,res1.status);
+    }
+    close(client_fd);
+    double t=(double)(clock() - tStart) / CLOCKS_PER_SEC;
+    printf("Time taken (in seconds) : %f", t);
+    return 0;
+}
+
+
+FTP SERVER WEEK-6
+
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <unistd.h>
+int main()
+{
+ int welcome, new_soc, fd, n;
+ char buffer[1024], fname[50];
+ struct sockaddr_in addr;
+ welcome = socket(PF_INET, SOCK_STREAM, 0);
+ addr.sin_family = AF_INET;
+ addr.sin_port = htons(7891);
+ addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+ bind(welcome, (struct sockaddr *) &addr, sizeof(addr));
+ printf("\nServer is Online");
+ /* listen for connections from the socket */
+ listen(welcome, 5);
+ /* accept a connection, we get a file descriptor */
+ new_soc = accept(welcome, NULL, NULL);
+ /* receive the filename */
+ recv(new_soc, fname, 50, 0);
+ printf("\nRequesting for file: %s\n", fname);
+ /* open the file and send its contents */
+ fd = open(fname, O_RDONLY);
+ if (fd < 0)
+ send(new_soc, "\nFile not found\n", 15, 0);
+ else
+ while ((n = read(fd, buffer, sizeof(buffer))) > 0)
+ send(new_soc, buffer, n, 0);
+ printf("\nRequest sent\n");
+ close(fd);
+ return 0;
+}
+
+FTP CLIENT
+
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <unistd.h>
+int main()
+{
+ int soc, n;
+ char buffer[1024], fname[50];
+ struct sockaddr_in addr;
+ /* socket creates an endpoint for communication and returns a file descriptor */
+ soc = socket(PF_INET, SOCK_STREAM, 0);
+ /*
+ * sockaddr_in is used for ip manipulation
+ * we define the port and IP for the connection.
+ */
+ addr.sin_family = AF_INET;
+ addr.sin_port = htons(7891);
+ addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+ /* keep trying to esatablish connection with server */
+ while(connect(soc, (struct sockaddr *) &addr, sizeof(addr))) ;
+ printf("\nClient is connected to Server");
+ printf("\nEnter file name: ");
+ scanf("%s", fname);
+ /* send the filename to the server */
+ send(soc, fname, sizeof(fname), 0);
+ printf("\nRecieved response\n");
+ /* keep printing any data received from the server */
+ while ((n = recv(soc, buffer, sizeof(buffer), 0)) > 0)
+ printf("%s", buffer);
+ return 0;
+}
+
+
+DNS
+
+AUTH
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 8085
+#define BUFFER_SIZE 1024
+#define N 100
+
+char urls[40][40];
+char ips[20][20];
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(urls[0],"google.com");
+    strcpy(urls[1],"openai.com");
+    strcpy(urls[2],"instagram.com");
+    strcpy(urls[3],"wikepedia.org");
+    strcpy(urls[4],"nationalgeographic.org");
+    strcpy(urls[5],"cartoonnetwork.org");
+    strcpy(urls[6],"indiangovt.in");
+    strcpy(urls[7],"tngovt.in");
+    strcpy(urls[8],"worldbank.in");
+    strcpy(ips[0],"1.1.1.1");
+    strcpy(ips[1],"2.2.2.2");
+    strcpy(ips[2],"3.3.3.3");
+    strcpy(ips[3],"4.4.4.4");
+    strcpy(ips[4],"5.5.5.5");
+    strcpy(ips[5],"6.6.6.6");
+    strcpy(ips[6],"7.7.7.7");
+    strcpy(ips[7],"8.8.8.8");
+    strcpy(ips[8],"9.9.9.9");
+
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+ }
+
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+        char ip[100];
+        int ind=-1,f=0;
+        char ret[100];
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+
+        read(new_socket, ip,sizeof(ip));
+        printf("URL Received from client : %s \n",ip);
+        for(int i=0;i<9;i++)
+                if(!strcmp(ip,urls[i]))
+                                ind = i;
+        if(ind==-1){
+                printf("URL not found \n");
+                strcpy(ret,"Not found");
+                send(new_socket,ret,sizeof(ret),0);
+                send(new_socket,&f,sizeof(f),0);
+        }
+        else{
+                f = 1;
+                strcpy(ret,ips[ind]);
+                send(new_socket,ret,sizeof(ret),0);
+                send(new_socket,&f,sizeof(f),0);
+        }
+        close(new_socket);
+    }
+
+    return 0;
+}
+
+
+CLIENT
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include<time.h>
+#define PORT 8081
+#define SERVER_IP "127.0.0.1"
+#define BUFFER_SIZE 1024
+#define N 100
+#include<time.h>
+
+char coms[20][20];
+char orgs[20][20];
+char ins[20][20];
+int main() {
+        clock_t tStart = clock();
+        int client_fd;
+    struct sockaddr_in server_address;
+    char input[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(coms[0],"google");
+    strcpy(coms[1],"openai");
+    strcpy(coms[2],"instagram");
+    strcpy(orgs[0],"wikepedia");
+    strcpy(orgs[1],"nationalgeographic");
+    strcpy(orgs[2],"cartoonnetwork");
+    strcpy(ins[0],"indiangovt");
+    strcpy(ins[1],"tngovt");
+    strcpy(ins[2],"worldbank");
+
+
+
+    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket creation error");
+        return -1;
+    }
+
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(PORT);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+        perror("address conversion error");
+        return -1;
+    }
+
+    // Connect to the server
+    if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+        perror("connection failed");
+        return -1;
+    }
+    int c=1;
+    printf("Enter choice.\n1 for .org\n2 for .in\n3 for .com: ");
+    //scanf("%d",&c);
+    send(client_fd, &c,sizeof(c),0);
+    int port;
+    read(client_fd,&port,sizeof(port));
+if(!port){
+            printf("Port not found \n");
+            return 0;
+    }
+    else
+            printf("Port found : %d \n",port);
+    close(client_fd);
+    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket creation error");
+        return -1;
+    }
+
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(port);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+        perror("address conversion error");
+        return -1;
+    }
+
+    // Connect to the server
+    if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+        perror("connection failed");
+        return -1;
+    }
+    printf("Enter choice \n");
+    if(port == 8082){
+        for(int i=0;i<3;i++){
+                printf("%d for %s\n",i+1,orgs[i]);
+        }
+    }
+    else if(port == 8083){
+        for(int i=0;i<3;i++){
+                printf("%d for %s\n",i+1,ins[i]);
+        }
+    }
+    else{
+        for(int i=0;i<3;i++){
+                printf("%d for %s\n",i+1,coms[i]);
+        }
+    }
+   // scanf("%d",&c);
+    char ip[100];
+    send(client_fd, &c,sizeof(c),0);
+    read(client_fd, ip, sizeof(ip));
+    printf("IP address received : %s \n",ip);
+    close(client_fd);
+    double t=(double)(clock() - tStart) / CLOCKS_PER_SEC;
+    printf("Time taken (in seconds) : %f", t);
+
+    return 0;
+}
+
+
+COM WITHOUT CACHE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define SERVER_IP "127.0.0.1"
+
+#define PORT 8084
+#define AUTH_PORT 8085
+#define BUFFER_SIZE 1024
+#define N 100
+
+char urls[20][20];
+char cache[20][20];
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(urls[0],"google");
+    strcpy(urls[1],"openai");
+    strcpy(urls[2],"instagram");
+    // Create socket
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attach socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    // Bind the socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+        int input;
+        int p=0;
+        // Accept a new connection
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+ perror("accept");
+            exit(EXIT_FAILURE);
+ }
+
+        // Read data from the client
+        read(new_socket, &input,sizeof(input));
+        printf("URL Received from client : %s \n",urls[input-1]);
+        char ip[100];
+        if(input>3){
+                printf("Invalid input \n");
+                strcpy(ip,"IP not found");
+                send(new_socket,ip,sizeof(ip),0);
+        }
+        else{
+                int client_fd;
+                struct sockaddr_in server_address;
+                if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                        perror("socket creation error");
+                        return -1;
+                }
+
+                server_address.sin_family = AF_INET;
+                server_address.sin_port = htons(AUTH_PORT);
+
+                // Convert IPv4 and IPv6 addresses from text to binary form
+                if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+                        perror("address conversion error");
+                        return -1;
+                }
+
+                // Connect to the server
+                if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+                        perror("connection failed");
+                        return -1;
+                }
+                char url[100];
+                strcpy(url,urls[input-1]);
+                strcat(url,".com");
+                printf("URL sent : %s \n",url);
+                send(client_fd,url,sizeof(url),0);
+                int f;
+                read(client_fd,ip,sizeof(ip));
+                read(client_fd,&f,sizeof(f));
+                close(client_fd);
+                send(new_socket,ip,sizeof(ip),0);
+        }
+        close(new_socket);
+    }
+
+    return 0;
+}
+
+
+IN WITH CACHE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define SERVER_IP "127.0.0.1"
+
+#define PORT 8083
+#define AUTH_PORT 8085
+#define BUFFER_SIZE 1024
+#define N 100
+
+char urls[20][20];
+char cache[20][20];
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(urls[0],"indiangovt");
+    strcpy(urls[1],"tngovt");
+    strcpy(urls[2],"worldbank");
+    for(int i=0;i<3;i++)
+            strcpy(cache[i],"empty");
+
+    // Create socket
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attach socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    // Bind the socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+ int input;
+        int p=0;
+        // Accept a new connection
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+ }
+
+        // Read data from the client
+        read(new_socket, &input,sizeof(input));
+        printf("URL Received from client : %s \n",urls[input-1]);
+        char ip[100];
+        if(input>3){
+                printf("Invalid input \n");
+                strcpy(ip,"IP not found");
+                send(new_socket,ip,sizeof(ip),0);
+        }
+        else{
+                if(!strcmp(cache[input-1],"empty")){
+                int client_fd;
+                struct sockaddr_in server_address;
+                if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                        perror("socket creation error");
+                        return -1;
+                }
+
+                server_address.sin_family = AF_INET;
+                server_address.sin_port = htons(AUTH_PORT);
+
+                // Convert IPv4 and IPv6 addresses from text to binary form
+                if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+                        perror("address conversion error");
+                        return -1;
+                }
+
+                // Connect to the server
+                if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+                        perror("connection failed");
+                        return -1;
+                }
+                char url[100];
+                strcpy(url,urls[input-1]);
+                strcat(url,".in");
+                printf("URL sent : %s \n",url);
+                send(client_fd,url,sizeof(url),0);
+                int f;
+                read(client_fd,ip,sizeof(ip));
+                read(client_fd,&f,sizeof(f));
+                strcpy(cache[input-1],ip);
+                printf("Added to cache %s\n",cache[input-1]);
+
+                close(client_fd);
+                send(new_socket,ip,sizeof(ip),0);
+                }
+                 else{
+                        printf("Retrieved from cache \n");
+                        send(new_socket,cache[input-1],sizeof(cache[input-1]),0);
+ }
+
+        }
+        close(new_socket);
+    }
+
+    return 0;
+}
+
+
+IN WITHOUT CACHE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define SERVER_IP "127.0.0.1"
+
+#define PORT 8083
+#define AUTH_PORT 8085
+#define BUFFER_SIZE 1024
+#define N 100
+
+char urls[20][20];
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(urls[0],"indiangovt");
+    strcpy(urls[1],"tngovt");
+    strcpy(urls[2],"worldbank");
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+        int input;
+        int p=0;
+        // Accept a new connection
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+ perror("accept");
+            exit(EXIT_FAILURE);
+ }
+
+        read(new_socket, &input,sizeof(input));
+        printf("URL Received from client : %s \n",urls[input-1]);
+        char ip[100];
+        if(input>3){
+                printf("Invalid input \n");
+                strcpy(ip,"IP not found");
+                send(new_socket,ip,sizeof(ip),0);
+        }
+        else{
+                int client_fd;
+                struct sockaddr_in server_address;
+                if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                        perror("socket creation error");
+                        return -1;
+                }
+
+                server_address.sin_family = AF_INET;
+                server_address.sin_port = htons(AUTH_PORT);
+
+                if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+                        perror("address conversion error");
+                        return -1;
+                }
+
+                if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+                        perror("connection failed");
+                        return -1;
+                }
+                char url[100];
+                strcpy(url,urls[input-1]);
+                strcat(url,".in");
+                printf("URL sent : %s \n",url);
+                send(client_fd,url,sizeof(url),0);
+                int f;
+                read(client_fd,ip,sizeof(ip));
+                read(client_fd,&f,sizeof(f));
+                close(client_fd);
+                send(new_socket,ip,sizeof(ip),0);
+        }
+        close(new_socket);
+    }
+
+    return 0;
+}
+
+ORG WITH CACHE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define SERVER_IP "127.0.0.1"
+
+#define PORT 8082
+#define AUTH_PORT 8085
+#define BUFFER_SIZE 1024
+#define N 100
+
+char urls[20][20];
+char cache[20][20];
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(urls[0],"wikepedia");
+    strcpy(urls[1],"nationalgeographic");
+    strcpy(urls[2],"cartoonnetwork");
+    for(int i=0;i<3;i++)
+            strcpy(cache[i],"empty");
+
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+ int input;
+        int p=0;
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+ }
+
+        read(new_socket, &input,sizeof(input));
+        printf("URL Received from client : %s \n",urls[input-1]);
+        char ip[100];
+        if(input>3){
+                printf("Invalid input \n");
+                strcpy(ip,"IP not found");
+                send(new_socket,ip,sizeof(ip),0);
+        }
+        else{
+                if(!strcmp(cache[input-1],"empty")){
+                int client_fd;
+                struct sockaddr_in server_address;
+                if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                        perror("socket creation error");
+                        return -1;
+                }
+
+                server_address.sin_family = AF_INET;
+                server_address.sin_port = htons(AUTH_PORT);
+
+                if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+                        perror("address conversion error");
+                        return -1;
+                }
+
+                if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+                        perror("connection failed");
+                        return -1;
+                }
+                char url[100];
+                strcpy(url,urls[input-1]);
+                strcat(url,".org");
+                printf("URL sent : %s \n",url);
+                send(client_fd,url,sizeof(url),0);
+                int f;
+                read(client_fd,ip,sizeof(ip));
+                read(client_fd,&f,sizeof(f)); strcpy(cache[input-1],ip);
+                printf("Added to cache %s\n",cache[input-1]);
+                close(client_fd);
+                send(new_socket,ip,sizeof(ip),0);
+                }
+                else{
+                        printf("Retrieved from cache \n");
+                        send(new_socket,cache[input-1],sizeof(cache[input-1]),0);
+                }
+
+        }
+ close(new_socket);
+    }
+
+    return 0;
+}
+
+
+ORG WITHOUT CACHE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define SERVER_IP "127.0.0.1"
+
+#define PORT 8082
+#define AUTH_PORT 8085
+#define BUFFER_SIZE 1024
+#define N 100
+
+char urls[20][20];
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(urls[0],"wikepedia");
+    strcpy(urls[1],"nationalgeographic");
+    strcpy(urls[2],"cartoonnetwork");
+
+    // Create socket
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attach socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    // Bind the socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+        int input;
+        int p=0;
+        // Accept a new connection
+ if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+ }
+
+        // Read data from the client
+        read(new_socket, &input,sizeof(input));
+        printf("URL Received from client : %s \n",urls[input-1]);
+        char ip[100];
+        if(input>3){
+                printf("Invalid input \n");
+                strcpy(ip,"IP not found");
+                send(new_socket,ip,sizeof(ip),0);
+        }
+        else{
+                int client_fd;
+                struct sockaddr_in server_address;
+                if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                        perror("socket creation error");
+                        return -1;
+                }
+
+                server_address.sin_family = AF_INET;
+                server_address.sin_port = htons(AUTH_PORT);
+
+                // Convert IPv4 and IPv6 addresses from text to binary form
+                if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+                        perror("address conversion error");
+                        return -1;
+                }
+
+                // Connect to the server
+                if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+                        perror("connection failed");
+                        return -1;
+                }
+                char url[100];
+                strcpy(url,urls[input-1]);
+                strcat(url,".org");
+                printf("URL sent : %s \n",url);
+                send(client_fd,url,sizeof(url),0);
+                int f;
+                read(client_fd,ip,sizeof(ip));
+                read(client_fd,&f,sizeof(f));
+                close(client_fd);
+                send(new_socket,ip,sizeof(ip),0);
+
+        }
+
+        close(new_socket);
+    }
+
+    return 0;
+}
+
+
+ROOT
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 8081
+#define BUFFER_SIZE 1024
+#define N 100
+
+char urls[20][20];
+int port[20];
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(urls[0],"org");
+    strcpy(urls[1],"in");
+    strcpy(urls[2],"com");
+    for(int i=0;i<3;i++){
+        port[i] = 8082+i;
+    }
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+        int input;
+        int p=0;
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+
+        // Read data from the client
+        read(new_socket, &input,sizeof(input));
+        printf("URL Received from client : %s \n",urls[input-1]);
+        if(input>3){
+                printf("Port not found \n");
+                send(new_socket,&p,sizeof(p),0);
+        }
+        else{
+                p = port[input-1];
+                send(new_socket,&p,sizeof(p),0);
+        }
+        close(new_socket);
+    }
+
+    return 0;
+}
+
+
+TLD
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define SERVER_IP "127.0.0.1"
+
+#define PORT 8084
+#define AUTH_PORT 8085
+#define BUFFER_SIZE 1024
+#define N 100
+
+char urls[20][20];
+char cache[20][20];
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    strcpy(urls[0],"google");
+    strcpy(urls[1],"openai");
+    strcpy(urls[2],"instagram");
+    for(int i=0;i<3;i++)
+            strcpy(cache[i],"empty");
+    // Create socket
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attach socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    // Bind the socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+
+    while (1) {
+        int input;
+        int p=0;
+ if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+ }
+
+        // Read data from the client
+        read(new_socket, &input,sizeof(input));
+        printf("URL Received from client : %s \n",urls[input-1]);
+        char ip[100];
+        if(input>3){
+                printf("Invalid input \n");
+                strcpy(ip,"IP not found");
+                send(new_socket,ip,sizeof(ip),0);
+        }
+        else{
+                if(!strcmp(cache[input-1],"empty")){
+                int client_fd;
+                struct sockaddr_in server_address;
+                if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                        perror("socket creation error");
+                        return -1;
+                }
+
+                server_address.sin_family = AF_INET;
+                server_address.sin_port = htons(AUTH_PORT);
+
+                // Convert IPv4 and IPv6 addresses from text to binary form
+                if (inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr) <= 0) {
+                        perror("address conversion error");
+                        return -1;
+                }
+
+                // Connect to the server
+                if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+                        perror("connection failed");
+                        return -1;
+                }
+                char url[100];
+                strcpy(url,urls[input-1]);
+                strcat(url,".com");
+                printf("URL sent : %s \n",url);
+                send(client_fd,url,sizeof(url),0);
+                int f;
+                read(client_fd,ip,sizeof(ip));
+                read(client_fd,&f,sizeof(f));
+                strcpy(cache[input-1],ip);
+                printf("Added to cache %s\n",cache[input-1]);
+                close(client_fd);
+                send(new_socket,ip,sizeof(ip),0);
+                }
+                else{
+                        printf("Retrieved from cache \n");
+                        send(new_socket,cache[input-1],sizeof(cache[input-1]),0);
+                }
+        }
+ close(new_socket);
+    }
+
+    return 0;
+}
